@@ -21,6 +21,12 @@ logs
 coverage
 playwright-report
 test-results
+app/**/*.js
+lib/**/*.js
+server/**/*.js
+db/**/*.js
+storage/uploads/*
+!storage/uploads/.gitkeep
 
 # Local env files
 .env

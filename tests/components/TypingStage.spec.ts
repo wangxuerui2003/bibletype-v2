@@ -11,6 +11,6 @@ describe("TypingStage", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("In the beginning");
+    expect(wrapper.text().replace(/\s+/g, " ").trim()).toContain("I n t h e b e g i n n i n g");
   });
 });

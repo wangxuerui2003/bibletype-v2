@@ -1,41 +1,126 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { db, pool } from "../db/client";
-import { biblicalPlaces, placeGeometries } from "../db/schema";
+import { biblicalPlaces, bibleVerses, placeGeometries, versePlaces } from "../db/schema";
+import { ensureOpenBibleDataRoot } from "../lib/data-sources";
 
-const places = [
-  { id: "place_jerusalem", slug: "jerusalem", name: "Jerusalem", type: "city", lat: 31.7683, lng: 35.2137 },
-  { id: "place_bethlehem", slug: "bethlehem", name: "Bethlehem", type: "city", lat: 31.7054, lng: 35.2024 },
-  { id: "place_nazareth", slug: "nazareth", name: "Nazareth", type: "city", lat: 32.6996, lng: 35.3035 },
-  { id: "place_jericho", slug: "jericho", name: "Jericho", type: "city", lat: 31.8667, lng: 35.45 },
-  { id: "place_galilee", slug: "galilee", name: "Galilee", type: "region", lat: 32.9, lng: 35.5 },
-  { id: "place_jordan", slug: "jordan-river", name: "Jordan River", type: "river", lat: 31.8, lng: 35.55 },
-  { id: "place_egypt", slug: "egypt", name: "Egypt", type: "region", lat: 26.8206, lng: 30.8025 },
-  { id: "place_rome", slug: "rome", name: "Rome", type: "city", lat: 41.9028, lng: 12.4964 },
-  { id: "place_damascus", slug: "damascus", name: "Damascus", type: "city", lat: 33.5138, lng: 36.2765 },
-];
+type AncientPlace = {
+  id: string;
+  friendly_id?: string;
+  url_slug: string;
+  types?: string[];
+  translation_name_counts?: Record<string, number>;
+  geojson_file?: string;
+  verses?: Array<{
+    osis: string;
+  }>;
+  identifications?: Array<{
+    score?: {
+      time_total?: number;
+    };
+    resolutions?: Array<{
+      lonlat?: string;
+      type?: string;
+    }>;
+  }>;
+};
 
-for (const place of places) {
-  await db
-    .insert(biblicalPlaces)
-    .values({
-      id: place.id,
-      slug: place.slug,
-      name: place.name,
-      aliases: [place.name.toLowerCase()],
-      placeType: place.type,
-      source: "seed",
+function readJsonLines<T>(contents: string) {
+  return contents
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as T);
+}
+
+function parseLonLat(lonLat?: string) {
+  if (!lonLat) {
+    return { lat: null, lng: null };
+  }
+
+  const [lng, lat] = lonLat.split(",").map((value) => Number(value));
+
+  return {
+    lat: Number.isFinite(lat) ? lat : null,
+    lng: Number.isFinite(lng) ? lng : null,
+  };
+}
+
+const root = await ensureOpenBibleDataRoot();
+const ancientPlaces = readJsonLines<AncientPlace>(
+  await readFile(join(root, "data", "ancient.jsonl"), "utf8"),
+);
+
+const verseByOsis = new Map(
+  (
+    await db.query.bibleVerses.findMany({
+      columns: {
+        id: true,
+        osis: true,
+      },
     })
-    .onConflictDoNothing();
+  ).map((verse) => [verse.osis, verse.id]),
+);
 
-  await db
-    .insert(placeGeometries)
-    .values({
-      id: `${place.id}_geometry`,
+await db.delete(versePlaces);
+await db.delete(placeGeometries);
+await db.delete(biblicalPlaces);
+
+for (const place of ancientPlaces) {
+  const aliases = Object.keys(place.translation_name_counts ?? {});
+  const firstIdentification = place.identifications?.[0];
+  const firstResolution = firstIdentification?.resolutions?.[0];
+  const confidence = firstIdentification?.score?.time_total
+    ? Number(firstIdentification.score.time_total) / 1000
+    : 0.5;
+
+  await db.insert(biblicalPlaces).values({
+    id: place.id,
+    slug: place.url_slug,
+    name: place.friendly_id ?? aliases[0] ?? place.url_slug,
+    aliases: aliases.length ? aliases : [place.friendly_id ?? place.url_slug],
+    placeType: place.types?.[0] ?? firstResolution?.type ?? "place",
+    confidence,
+    source: "openbible",
+  });
+
+  const geometryFile = place.geojson_file ? join(root, "geometry", place.geojson_file) : null;
+  let geojson: Record<string, unknown> | null = null;
+
+  if (geometryFile) {
+    try {
+      geojson = JSON.parse(await readFile(geometryFile, "utf8")) as Record<string, unknown>;
+    } catch {
+      geojson = null;
+    }
+  }
+
+  const { lat, lng } = parseLonLat(firstResolution?.lonlat);
+
+  await db.insert(placeGeometries).values({
+    id: `${place.id}_geometry`,
+    placeId: place.id,
+    lat,
+    lng,
+    geojson,
+    label: place.friendly_id ?? aliases[0] ?? place.url_slug,
+  });
+
+  for (const verse of place.verses ?? []) {
+    const verseId = verseByOsis.get(verse.osis);
+
+    if (!verseId) {
+      continue;
+    }
+
+    await db.insert(versePlaces).values({
+      verseId,
       placeId: place.id,
-      lat: place.lat,
-      lng: place.lng,
-      label: place.name,
-    })
-    .onConflictDoNothing();
+      source: "openbible",
+      confidence,
+      adminConfirmed: false,
+    });
+  }
 }
 
 await pool.end();

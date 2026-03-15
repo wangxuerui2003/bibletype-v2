@@ -1,12 +1,19 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../../../db/client";
-import { user } from "../../../db/schema";
+import { user, userProfiles } from "../../../db/schema";
 import { requireServerSession } from "../../utils/session";
 
 const schema = z.object({
   name: z.string().min(2).max(60),
-  image: z.string().url().optional().or(z.literal("")),
+  image: z
+    .string()
+    .refine((value) => value === "" || value.startsWith("/") || /^https?:\/\//.test(value), {
+      message: "Image must be a site path or URL",
+    })
+    .optional(),
+  bio: z.string().max(500).default(""),
+  autoContinueAfterVerse: z.boolean().default(false),
 });
 
 export default defineEventHandler(async (event) => {
@@ -29,5 +36,25 @@ export default defineEventHandler(async (event) => {
       image: user.image,
     });
 
-  return { user: updated };
+  await db
+    .insert(userProfiles)
+    .values({
+      userId: session.user.id,
+      bio: body.bio,
+      autoContinueAfterVerse: body.autoContinueAfterVerse,
+    })
+    .onConflictDoUpdate({
+      target: userProfiles.userId,
+      set: {
+        bio: body.bio,
+        autoContinueAfterVerse: body.autoContinueAfterVerse,
+        updatedAt: new Date(),
+      },
+    });
+
+  const profile = await db.query.userProfiles.findFirst({
+    where: eq(userProfiles.userId, session.user.id),
+  });
+
+  return { user: updated, profile };
 });

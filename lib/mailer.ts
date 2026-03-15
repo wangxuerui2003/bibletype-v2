@@ -1,4 +1,7 @@
 import nodemailer from "nodemailer";
+import { loadLocalEnv } from "./load-local-env";
+
+loadLocalEnv();
 
 export function getMailer() {
   return nodemailer.createTransport({

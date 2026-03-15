@@ -29,23 +29,43 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-xl">
-    <section class="panel p-8">
-      <h1 class="text-3xl font-semibold">Create your account</h1>
-      <div class="mt-6 space-y-4">
-        <input v-model="form.name" class="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3" placeholder="Display name" />
-        <input v-model="form.email" class="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3" placeholder="Email" />
+  <div class="mx-auto flex min-h-[calc(100vh-10.5rem)] max-w-4xl items-center justify-center py-6">
+    <section class="panel w-full max-w-xl p-8 md:p-10">
+      <h1 class="text-4xl font-semibold tracking-tight">Create your account</h1>
+      <p class="mt-4 text-base leading-8 text-[var(--color-copy-dim)]">
+        Start saving progress, racing friends, and building a full typing history around each verse.
+      </p>
+      <form class="mt-8 space-y-4" @submit.prevent="handleSubmit">
         <input
+          id="sign-up-name"
+          v-model="form.name"
+          name="name"
+          autocomplete="name"
+          class="w-full rounded-2xl border border-white/8 bg-white/5 px-5 py-4 text-base placeholder:text-[var(--color-copy-dim)]"
+          placeholder="Display name"
+        />
+        <input
+          id="sign-up-email"
+          v-model="form.email"
+          name="email"
+          autocomplete="email"
+          class="w-full rounded-2xl border border-white/8 bg-white/5 px-5 py-4 text-base placeholder:text-[var(--color-copy-dim)]"
+          placeholder="Email"
+        />
+        <input
+          id="sign-up-password"
           v-model="form.password"
+          name="password"
           type="password"
-          class="w-full rounded-2xl border border-white/8 bg-white/5 px-4 py-3"
+          autocomplete="new-password"
+          class="w-full rounded-2xl border border-white/8 bg-white/5 px-5 py-4 text-base placeholder:text-[var(--color-copy-dim)]"
           placeholder="Password"
         />
-        <button class="w-full rounded-2xl bg-[var(--color-accent)] px-4 py-3 font-semibold text-black" :disabled="loading" @click="handleSubmit">
+        <button class="w-full rounded-2xl bg-[var(--color-accent)] px-5 py-4 text-base font-semibold text-black" :disabled="loading" @click="handleSubmit">
           {{ loading ? "Creating..." : "Create account" }}
         </button>
         <p v-if="error" class="text-sm text-[var(--color-danger)]">{{ error }}</p>
-      </div>
+      </form>
     </section>
   </div>
 </template>

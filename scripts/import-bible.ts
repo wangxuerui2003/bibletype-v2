@@ -1,11 +1,13 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { db, pool } from "../db/client";
-import { bibleBooks, bibleVerses } from "../db/schema";
+import { bibleBooks, bibleVerses, placeGeometries, raceLobbies, raceParticipants, raceResults, typingAttempts, userProgress, versePlaces } from "../db/schema";
+import { resolveBibleImportRoot } from "../lib/data-sources";
 import { normalizeBibleText } from "../lib/text";
 import { buildReference, createBookId, createVerseId } from "../server/services/bible";
+import { referenceToOsis } from "../lib/bible-books";
 
-const ROOT = process.env.BIBLE_IMPORT_ROOT ?? "/Users/wxuerui/coding/bibletype-old/bible-scraper/Bible";
+const ROOT = resolveBibleImportRoot();
 
 type BookFile = {
   book: string;
@@ -19,6 +21,16 @@ type BookFile = {
     }>;
   }>;
 };
+
+await db.delete(raceResults);
+await db.delete(raceParticipants);
+await db.delete(raceLobbies);
+await db.delete(typingAttempts);
+await db.delete(userProgress);
+await db.delete(versePlaces);
+await db.delete(placeGeometries);
+await db.delete(bibleVerses);
+await db.delete(bibleBooks);
 
 async function importFolder(testament: "OT" | "NT") {
   const folder = join(ROOT, testament);
@@ -55,6 +67,7 @@ async function importFolder(testament: "OT" | "NT") {
             bookId,
             chapter: chapter.chapter,
             verse: verse.verse,
+            osis: referenceToOsis(bookName, chapter.chapter, verse.verse),
             reference,
             sequence,
             textRaw: verse.text.trim(),

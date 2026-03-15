@@ -8,6 +8,20 @@
       "when": 1773599852625,
       "tag": "0000_stiff_weapon_omega",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773603173987,
+      "tag": "0001_serious_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773606500000,
+      "tag": "0002_auto_continue_after_verse",
+      "breakpoints": true
     }
   ]
 }

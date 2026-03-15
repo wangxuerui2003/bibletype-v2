@@ -36,6 +36,7 @@ export const bibleVerses = pgTable(
       .references(() => bibleBooks.id, { onDelete: "cascade" }),
     chapter: integer("chapter").notNull(),
     verse: integer("verse").notNull(),
+    osis: varchar("osis", { length: 32 }).notNull().unique(),
     reference: varchar("reference", { length: 128 }).notNull().unique(),
     sequence: integer("sequence").notNull(),
     textRaw: text("text_raw").notNull(),
@@ -100,6 +101,22 @@ export const feedback = pgTable(
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [index("feedback_status_idx").on(table.status)],
+);
+
+export const userProfiles = pgTable(
+  "user_profiles",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    bio: text("bio").default("").notNull(),
+    autoContinueAfterVerse: boolean("auto_continue_after_verse").default(false).notNull(),
+    avatarPath: varchar("avatar_path", { length: 255 }),
+    avatarMimeType: varchar("avatar_mime_type", { length: 128 }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [index("user_profiles_avatar_path_idx").on(table.avatarPath)],
 );
 
 export const biblicalPlaces = pgTable("biblical_places", {
@@ -226,6 +243,8 @@ export const importJobs = pgTable(
     type: varchar("type", { length: 64 }).notNull(),
     status: varchar("status", { length: 32 }).default("pending").notNull(),
     summary: jsonb("summary").$type<Record<string, unknown>>().default(sql`'{}'::jsonb`).notNull(),
+    source: varchar("source", { length: 128 }),
+    logs: text("logs"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     completedAt: timestamp("completed_at"),
   },
@@ -242,6 +261,13 @@ export const bibleVersesRelations = relations(bibleVerses, ({ one, many }) => ({
     references: [bibleBooks.id],
   }),
   places: many(versePlaces),
+}));
+
+export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
+  user: one(user, {
+    fields: [userProfiles.userId],
+    references: [user.id],
+  }),
 }));
 
 export const versePlacesRelations = relations(versePlaces, ({ one }) => ({

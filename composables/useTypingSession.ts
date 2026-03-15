@@ -1,9 +1,11 @@
-import { computed, ref } from "vue";
+import { computed, onScopeDispose, ref, watch } from "vue";
 import { splitVerseWords } from "../lib/text";
 
 export function useTypingSession(text: MaybeRefOrGetter<string>) {
   const typed = ref("");
   const startedAt = ref<number | null>(null);
+  const nowMs = ref(Date.now());
+  let timer: ReturnType<typeof setInterval> | null = null;
 
   const normalizedText = computed(() => toValue(text));
   const words = computed(() => splitVerseWords(normalizedText.value));
@@ -20,27 +22,27 @@ export function useTypingSession(text: MaybeRefOrGetter<string>) {
     return index;
   });
 
-  const elapsedMs = computed(() => {
-    if (!startedAt.value) {
-      return 0;
+  const correctChars = computed(() => {
+    let count = 0;
+    for (let i = 0; i < typed.value.length && i < normalizedText.value.length; i += 1) {
+      if (typed.value[i] === normalizedText.value[i]) {
+        count += 1;
+      }
     }
-    return Date.now() - startedAt.value;
+    return count;
   });
 
   const accuracy = computed(() => {
     if (!typed.value.length) {
       return 100;
     }
-    return Number(((completedChars.value / typed.value.length) * 100).toFixed(1));
+    return Number(((correctChars.value / typed.value.length) * 100).toFixed(1));
   });
 
-  const wpm = computed(() => {
-    if (!elapsedMs.value) {
-      return 0;
-    }
+  const elapsedMs = computed(() => getElapsedMs(nowMs.value));
 
-    const minutes = elapsedMs.value / 60000;
-    return Number((completedChars.value / 5 / Math.max(minutes, 1 / 60)).toFixed(1));
+  const wpm = computed(() => {
+    return calculateWpm(correctChars.value, elapsedMs.value);
   });
 
   const isComplete = computed(
@@ -50,6 +52,8 @@ export function useTypingSession(text: MaybeRefOrGetter<string>) {
   function pushKey(key: string) {
     if (!startedAt.value) {
       startedAt.value = Date.now();
+      nowMs.value = startedAt.value;
+      ensureTimer();
     }
 
     if (key === "Backspace") {
@@ -65,7 +69,61 @@ export function useTypingSession(text: MaybeRefOrGetter<string>) {
   function reset() {
     typed.value = "";
     startedAt.value = null;
+    nowMs.value = Date.now();
+    stopTimer();
   }
+
+  function snapshot() {
+    const elapsed = getElapsedMs(Date.now());
+
+    return {
+      elapsedMs: elapsed,
+      correctChars: correctChars.value,
+      accuracy: typed.value.length
+        ? Number(((correctChars.value / typed.value.length) * 100).toFixed(1))
+        : 100,
+      wpm: calculateWpm(correctChars.value, elapsed),
+    };
+  }
+
+  function ensureTimer() {
+    if (timer) {
+      return;
+    }
+
+    timer = setInterval(() => {
+      nowMs.value = Date.now();
+    }, 100);
+  }
+
+  function stopTimer() {
+    if (!timer) {
+      return;
+    }
+
+    clearInterval(timer);
+    timer = null;
+  }
+
+  function getElapsedMs(currentTime: number) {
+    if (!startedAt.value) {
+      return 0;
+    }
+
+    return Math.max(currentTime - startedAt.value, 0);
+  }
+
+  watch(
+    normalizedText,
+    () => {
+      reset();
+    },
+    { flush: "sync" },
+  );
+
+  onScopeDispose(() => {
+    stopTimer();
+  });
 
   return {
     typed,
@@ -73,11 +131,22 @@ export function useTypingSession(text: MaybeRefOrGetter<string>) {
     typedWords,
     totalChars,
     completedChars,
+    correctChars,
     elapsedMs,
     accuracy,
     wpm,
     isComplete,
     pushKey,
     reset,
+    snapshot,
   };
+}
+
+function calculateWpm(correctChars: number, elapsedMs: number) {
+  if (!correctChars || elapsedMs <= 0) {
+    return 0;
+  }
+
+  const minutes = elapsedMs / 60000;
+  return Number((correctChars / 5 / minutes).toFixed(1));
 }

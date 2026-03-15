@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, sql } from "drizzle-orm";
 import { db } from "../../db/client";
 import { bibleBooks, bibleVerses, biblicalPlaces, placeGeometries, userProgress, versePlaces } from "../../db/schema";
 import { createId } from "../../lib/ids";
@@ -66,15 +66,18 @@ export async function getCurrentVersePayload(userId: string) {
       name: biblicalPlaces.name,
       slug: biblicalPlaces.slug,
       placeType: biblicalPlaces.placeType,
+      source: versePlaces.source,
       confidence: versePlaces.confidence,
       lat: placeGeometries.lat,
       lng: placeGeometries.lng,
       label: placeGeometries.label,
+      geojson: placeGeometries.geojson,
     })
     .from(versePlaces)
     .innerJoin(biblicalPlaces, eq(versePlaces.placeId, biblicalPlaces.id))
     .leftJoin(placeGeometries, eq(placeGeometries.placeId, biblicalPlaces.id))
-    .where(eq(versePlaces.verseId, verse.id));
+    .where(and(eq(versePlaces.verseId, verse.id), gte(versePlaces.confidence, 0.5)))
+    .orderBy(desc(versePlaces.confidence), asc(biblicalPlaces.name));
 
   return {
     verse: {

@@ -1,3 +1,7 @@
+import { loadLocalEnv } from "./lib/load-local-env";
+
+loadLocalEnv();
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
@@ -18,6 +22,7 @@ export default defineNuxtConfig({
     public: {
       appUrl: process.env.NUXT_APP_URL ?? "http://localhost:3000",
       googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      googleAuthEnabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     },
   },
   typescript: {

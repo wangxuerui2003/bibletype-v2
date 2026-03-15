@@ -18,9 +18,12 @@
     "test": "pnpm test:unit && pnpm test:e2e",
     "test:e2e": "playwright test",
     "test:unit": "vitest run tests/unit tests/components",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "pnpm exec nuxi typecheck"
   },
   "dependencies": {
+    "@iconify-json/logos": "^1.2.10",
+    "@iconify/vue": "^5.0.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "better-auth": "^1.5.5",
     "drizzle-orm": "^0.45.1",
