@@ -1,0 +1,13 @@
+[Unit]
+Description=BibleType PostgreSQL Backup
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=YOUR_DEPLOY_USER
+WorkingDirectory=/srv/bibletype/app
+Environment=ENV_FILE=/srv/bibletype/app/.env
+Environment=BACKUP_DIR=/srv/bibletype/backups/postgres
+Environment=RETENTION_DAYS=14
+ExecStart=/srv/bibletype/app/scripts/backup-postgres.sh

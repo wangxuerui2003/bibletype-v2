@@ -7,16 +7,16 @@ import { sendMail } from "./mailer";
 
 loadLocalEnv();
 
-const appBaseUrl = process.env.BETTER_AUTH_URL ?? process.env.NUXT_APP_URL ?? "http://localhost:3000";
+const appBaseUrl = process.env.BETTER_AUTH_URL ?? process.env.NUXT_APP_URL ?? "http://localhost:3100";
 const googleConfigured =
   Boolean(process.env.GOOGLE_CLIENT_ID) && Boolean(process.env.GOOGLE_CLIENT_SECRET);
 const trustedOrigins = Array.from(
   new Set([
     appBaseUrl,
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
     "http://localhost:3100",
     "http://127.0.0.1:3100",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
   ]),
 );
 

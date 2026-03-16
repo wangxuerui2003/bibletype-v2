@@ -1,0 +1,11 @@
+[Unit]
+Description=Run BibleType PostgreSQL backup on a schedule
+
+[Timer]
+OnCalendar=*-*-* 03:20:00
+Persistent=true
+RandomizedDelaySec=10m
+Unit=bibletype-db-backup.service
+
+[Install]
+WantedBy=timers.target

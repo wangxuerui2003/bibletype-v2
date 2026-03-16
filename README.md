@@ -1,75 +1,65 @@
-# Nuxt Minimal Starter
+# BibleType V2
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+BibleType V2 is a full-stack rewrite of BibleType built with Nuxt 4, Vue 3, TypeScript, PostgreSQL, Drizzle, Better Auth, and MapLibre.
 
-## Setup
+This repository contains:
 
-Make sure to install dependencies:
+- the user-facing typing experience
+- email/password and Google sign-in
+- admin pages and admin APIs
+- Bible and place import scripts
+- multiplayer race routes and services
+
+## Local development
+
+1. Install dependencies:
 
 ```bash
-# npm
-npm install
-
-# pnpm
 pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+2. Copy the example environment file:
 
 ```bash
-# npm
-npm run dev
+cp .env.example .env
+```
 
-# pnpm
+3. Start local infrastructure:
+
+```bash
+docker compose up -d
+```
+
+4. Run migrations and import Bible data:
+
+```bash
+pnpm db:migrate
+pnpm import:bible
+pnpm import:places
+```
+
+5. Start the app:
+
+```bash
 pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+The development server runs on `http://localhost:3100`.
 
-Build the application for production:
+## Deployment
 
-```bash
-# npm
-npm run build
+Use the deployment guide in [DEPLOYMENT.md](./DEPLOYMENT.md).
 
-# pnpm
-pnpm build
+## Backup and restore
 
-# yarn
-yarn build
+Use [BACKUPS.md](./BACKUPS.md) for database backup scheduling, restore steps, and recovery checks.
 
-# bun
-bun run build
-```
+## AI server bootstrap
 
-Locally preview production build:
+Use [SERVER_BOOTSTRAP_CHECKLIST.md](./SERVER_BOOTSTRAP_CHECKLIST.md) when handing deployment to an AI on a fresh VPS.
 
-```bash
-# npm
-npm run preview
+## Important operational notes
 
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+- `pnpm import:bible` is destructive. It clears Bible content and several progress-related tables before reimporting data.
+- `pnpm import:places` refreshes place and verse-place mapping data.
+- Production deployment assumes host-level `nginx` with SSL managed outside this repository.
