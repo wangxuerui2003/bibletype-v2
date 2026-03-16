@@ -29,13 +29,13 @@ const tokens = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-[320px] px-2 py-10 md:min-h-[420px] md:px-4">
+  <div class="flex min-h-[280px] flex-col justify-center px-2 py-4 md:min-h-[360px] md:px-4 md:py-6">
     <div class="mono text-center text-xs uppercase tracking-[0.3em] text-[var(--color-copy-dim)]">
       stay centered. type clean.
     </div>
 
     <div
-      class="typing-text mx-auto mt-10 max-w-[1240px] text-center text-[2.2rem] leading-[1.75] text-[var(--color-copy-dim)] md:text-[3.2rem]"
+      class="typing-text mx-auto mt-6 max-w-[1240px] text-center text-[2.2rem] leading-[1.72] text-[var(--color-copy-dim)] md:mt-8 md:text-[3.05rem]"
     >
       <template v-for="token in tokens" :key="token.id">
         <span class="typing-token">

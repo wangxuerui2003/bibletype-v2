@@ -10,6 +10,7 @@ const { data: profileData } = await useFetch("/api/profile");
 const typing = useTypingSession(computed(() => data.value?.verse.textNormalized ?? ""));
 const completing = ref(false);
 const savingPreference = ref(false);
+const mapOpen = ref(false);
 const completionSummary = ref<null | {
   reference: string;
   wpm: string;
@@ -118,7 +119,7 @@ function dismissCompletionSummary() {
 </script>
 
 <template>
-  <div class="space-y-10">
+  <div class="relative">
     <div
       v-if="completionSummary"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
@@ -148,42 +149,63 @@ function dismissCompletionSummary() {
       </div>
     </div>
 
-    <section class="space-y-6">
-      <div class="mx-auto flex w-full max-w-[980px] justify-end">
-        <button
-          class="inline-flex items-center gap-3 rounded-full border border-white/8 bg-white/5 px-4 py-2 text-sm text-[var(--color-copy-dim)] transition-smooth hover:border-white/16 hover:text-[var(--color-copy)]"
-          :disabled="savingPreference"
-          @click="toggleAutoContinue"
-        >
-          <span class="mono text-[0.72rem] uppercase tracking-[0.2em]">auto continue</span>
-          <span
-            class="relative h-6 w-11 rounded-full transition-smooth"
-            :class="autoContinueAfterVerse ? 'bg-[var(--color-accent)]' : 'bg-white/10'"
-          >
-            <span
-              class="absolute top-1 h-4 w-4 rounded-full bg-[var(--color-bg)] transition-smooth"
-              :class="autoContinueAfterVerse ? 'left-6' : 'left-1'"
-            />
-          </span>
-        </button>
-      </div>
-      <MetricStrip :metrics="metrics" />
-      <TypingStage :text="data?.verse.textNormalized ?? ''" :typed="typing.typed.value" />
-      <div class="mx-auto max-w-[980px] rounded-full border border-white/6 bg-white/5 px-6 py-3 text-center text-sm text-[var(--color-copy-dim)]">
-        Press keys directly on the keyboard. When the verse is completed, progress and stats are saved automatically.
-      </div>
-    </section>
-
-    <section class="mx-auto grid w-full max-w-[1280px] gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <MapPanel :places="data?.places ?? []" />
-      <div class="panel px-5 py-5">
-        <p class="mono text-xs uppercase tracking-[0.24em] text-[var(--color-copy-dim)]">next moves</p>
-        <div class="mt-4 flex flex-wrap gap-3">
-          <NuxtLink to="/race" class="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-black">
-            Start a race
-          </NuxtLink>
-          <NuxtLink to="/feedback" class="rounded-full border border-white/10 px-4 py-2 text-sm">Leave feedback</NuxtLink>
+    <section class="mx-auto flex min-h-[calc(100vh-7.25rem)] w-full max-w-[1380px] flex-col overflow-hidden py-2 lg:min-h-[calc(100vh-8rem)]">
+      <div class="mx-auto flex w-full max-w-[1120px] items-center justify-between gap-4">
+        <div class="mono text-sm uppercase tracking-[0.24em] text-[var(--color-copy-dim)]">
+          press any key to begin
         </div>
+        <div class="flex items-center gap-3">
+          <button
+            class="inline-flex items-center gap-2 rounded-full border border-white/8 bg-white/5 px-4 py-2 text-sm text-[var(--color-copy-dim)] transition-smooth hover:border-white/16 hover:text-[var(--color-copy)]"
+            @click="mapOpen = !mapOpen"
+          >
+            <span class="mono text-[0.72rem] uppercase tracking-[0.2em]">map</span>
+            <span class="text-xs">{{ mapOpen ? "hide" : "show" }}</span>
+          </button>
+          <button
+            class="inline-flex items-center gap-3 rounded-full border border-white/8 bg-white/5 px-4 py-2 text-sm text-[var(--color-copy-dim)] transition-smooth hover:border-white/16 hover:text-[var(--color-copy)]"
+            :disabled="savingPreference"
+            @click="toggleAutoContinue"
+          >
+            <span class="mono text-[0.72rem] uppercase tracking-[0.2em]">auto continue</span>
+            <span
+              class="relative h-6 w-11 rounded-full transition-smooth"
+              :class="autoContinueAfterVerse ? 'bg-[var(--color-accent)]' : 'bg-white/10'"
+            >
+              <span
+                class="absolute top-1 h-4 w-4 rounded-full bg-[var(--color-bg)] transition-smooth"
+                :class="autoContinueAfterVerse ? 'left-6' : 'left-1'"
+              />
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="relative flex min-h-0 flex-1 items-center justify-center">
+        <div class="flex w-full min-h-0 max-w-[1120px] flex-col justify-center gap-6">
+          <MetricStrip :metrics="metrics" />
+          <TypingStage :text="data?.verse.textNormalized ?? ''" :typed="typing.typed.value" />
+          <div class="mx-auto max-w-[920px] text-center text-sm text-[var(--color-copy-dim)]">
+            Press keys directly on the keyboard. When the verse is completed, progress and stats are saved automatically.
+          </div>
+        </div>
+
+        <Transition
+          enter-active-class="transition duration-180 ease-out"
+          enter-from-class="translate-y-3 opacity-0"
+          enter-to-class="translate-y-0 opacity-100"
+          leave-active-class="transition duration-140 ease-in"
+          leave-from-class="translate-y-0 opacity-100"
+          leave-to-class="translate-y-3 opacity-0"
+        >
+          <div v-if="mapOpen" class="absolute bottom-2 right-0 hidden xl:block">
+            <MapPanel compact :places="data?.places ?? []" />
+          </div>
+        </Transition>
+      </div>
+
+      <div v-if="mapOpen" class="mx-auto mt-4 w-full max-w-[1120px] xl:hidden">
+        <MapPanel compact :places="data?.places ?? []" />
       </div>
     </section>
   </div>

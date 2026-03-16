@@ -11,6 +11,7 @@ const props = defineProps<{
     source?: string;
     geojson?: Record<string, unknown> | null;
   }>;
+  compact?: boolean;
 }>();
 
 const mapEl = ref<HTMLDivElement | null>(null);
@@ -146,11 +147,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="panel overflow-hidden">
-    <div class="flex items-center justify-between border-b border-white/5 px-5 py-4">
+  <div
+    class="panel overflow-hidden"
+    :class="props.compact ? 'w-full max-w-[360px]' : ''"
+  >
+    <div
+      class="flex items-center justify-between border-b border-white/5"
+      :class="props.compact ? 'px-4 py-3' : 'px-5 py-4'"
+    >
       <div>
         <p class="mono text-xs uppercase tracking-[0.24em] text-[var(--color-copy-dim)]">relevant places</p>
-        <h3 class="mt-2 text-lg font-semibold">Verse map</h3>
+        <h3 class="mt-2 font-semibold" :class="props.compact ? 'text-base' : 'text-lg'">Verse map</h3>
         <p v-if="activePlace" class="mt-1 text-xs text-[var(--color-copy-dim)]">
           Focus: {{ activePlace.name }} · {{ activePlace.placeType }}
         </p>
@@ -160,20 +167,28 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="visiblePlaces.length" ref="mapEl" class="h-64 w-full" />
-    <div v-else class="flex h-64 items-center justify-center px-6 text-center text-sm text-[var(--color-copy-dim)]">
+    <div v-if="visiblePlaces.length" ref="mapEl" class="w-full" :class="props.compact ? 'h-44' : 'h-64'" />
+    <div
+      v-else
+      class="flex items-center justify-center text-center text-sm text-[var(--color-copy-dim)]"
+      :class="props.compact ? 'h-44 px-4' : 'h-64 px-6'"
+    >
       This verse has no mapped places yet.
     </div>
 
-    <div v-if="visiblePlaces.length" class="flex flex-wrap gap-2 px-5 py-4">
+    <div
+      v-if="visiblePlaces.length"
+      class="flex flex-wrap gap-2"
+      :class="props.compact ? 'max-h-28 overflow-y-auto px-4 py-3' : 'px-5 py-4'"
+    >
       <div
         v-for="place in visiblePlaces"
         :key="place.placeId"
-        class="cursor-pointer rounded-full px-3 py-2 text-sm transition-smooth"
+        class="cursor-pointer rounded-full transition-smooth"
         :class="
           place.placeId === selectedPlaceId
-            ? 'bg-[var(--color-accent-soft)] text-copy ring-1 ring-[var(--color-accent)]'
-            : 'bg-white/5 text-[var(--color-copy-dim)]'
+            ? `bg-[var(--color-accent-soft)] text-copy ring-1 ring-[var(--color-accent)] ${props.compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`
+            : `bg-white/5 text-[var(--color-copy-dim)] ${props.compact ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm'}`
         "
         @click="
           selectedPlaceId = place.placeId;
