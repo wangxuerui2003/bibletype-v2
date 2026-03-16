@@ -10,6 +10,10 @@ loadLocalEnv();
 const appBaseUrl = process.env.BETTER_AUTH_URL ?? process.env.NUXT_APP_URL ?? "http://localhost:3100";
 const googleConfigured =
   Boolean(process.env.GOOGLE_CLIENT_ID) && Boolean(process.env.GOOGLE_CLIENT_SECRET);
+const smtpConfigured =
+  Boolean(process.env.SMTP_HOST) &&
+  Boolean(process.env.SMTP_PORT) &&
+  Boolean(process.env.MAIL_FROM);
 const trustedOrigins = Array.from(
   new Set([
     appBaseUrl,
@@ -30,6 +34,10 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     sendResetPassword: async ({ user, url }) => {
+      if (!smtpConfigured) {
+        return;
+      }
+
       void sendMail({
         to: user.email,
         subject: "Reset your BibleType password",
@@ -38,9 +46,13 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: smtpConfigured,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
+      if (!smtpConfigured) {
+        return;
+      }
+
       void sendMail({
         to: user.email,
         subject: "Verify your BibleType email",
@@ -69,6 +81,10 @@ export const auth = betterAuth({
     changeEmail: {
       enabled: true,
       sendChangeEmailVerification: async ({ newEmail, url }: { newEmail: string; url: string }) => {
+        if (!smtpConfigured) {
+          return;
+        }
+
         void sendMail({
           to: newEmail,
           subject: "Confirm your new BibleType email",

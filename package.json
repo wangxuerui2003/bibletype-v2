@@ -19,7 +19,7 @@
     "test:e2e": "playwright test",
     "test:unit": "vitest run tests/unit tests/components",
     "test:watch": "vitest",
-    "typecheck": "pnpm exec nuxi typecheck"
+    "typecheck": "nuxi typecheck"
   },
   "dependencies": {
     "@iconify-json/logos": "^1.2.10",
