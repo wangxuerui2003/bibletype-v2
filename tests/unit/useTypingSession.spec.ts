@@ -52,4 +52,33 @@ describe("useTypingSession", () => {
 
     scope.stop();
   });
+
+  it("keeps corrected mistakes in the verse accuracy", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+
+    const scope = effectScope();
+    const session = scope.run(() => useTypingSession("grace"))!;
+
+    session.pushKey("g");
+    session.pushKey("x");
+    session.pushKey("Backspace");
+    session.pushKey("r");
+    session.pushKey("a");
+    session.pushKey("c");
+    session.pushKey("e");
+
+    await vi.advanceTimersByTimeAsync(2500);
+    await nextTick();
+
+    expect(session.isComplete.value).toBe(true);
+    expect(session.accuracy.value).toBeCloseTo(83.3, 1);
+
+    const snapshot = session.snapshot();
+
+    expect(snapshot.correctChars).toBe(5);
+    expect(snapshot.accuracy).toBeCloseTo(83.3, 1);
+
+    scope.stop();
+  });
 });

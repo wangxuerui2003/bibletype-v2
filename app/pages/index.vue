@@ -27,6 +27,10 @@ const metrics = computed(() => [
   { label: "accuracy", value: `${typing.accuracy.value.toFixed(1)}%` },
   { label: "chars", value: `${typing.completedChars.value}/${typing.totalChars.value}` },
 ]);
+const hasTypingErrors = computed(() => {
+  return typing.typed.value.length > 0
+    && typing.correctChars.value < typing.typed.value.length;
+});
 
 async function toggleAutoContinue() {
   if (savingPreference.value) {
@@ -185,6 +189,14 @@ function dismissCompletionSummary() {
         <div class="flex w-full min-h-0 max-w-[1120px] flex-col justify-center gap-6">
           <MetricStrip :metrics="metrics" />
           <TypingStage :text="data?.verse.textNormalized ?? ''" :typed="typing.typed.value" />
+          <div
+            v-if="hasTypingErrors"
+            class="mx-auto flex max-w-[920px] items-center justify-center gap-3 rounded-full border border-[var(--color-danger)]/30 bg-[color:color-mix(in_srgb,var(--color-danger)_12%,transparent)] px-4 py-2 text-center"
+          >
+            <span class="h-2 w-2 rounded-full bg-[var(--color-danger)]" aria-hidden="true" />
+            <span class="mono text-[0.72rem] uppercase tracking-[0.18em] text-[var(--color-danger)]">errors present</span>
+            <span class="text-sm text-[var(--color-copy)]">Correct the red characters to finish the verse.</span>
+          </div>
           <div class="mx-auto max-w-[920px] text-center text-sm text-[var(--color-copy-dim)]">
             Press keys directly on the keyboard. When the verse is completed, progress and stats are saved automatically.
           </div>

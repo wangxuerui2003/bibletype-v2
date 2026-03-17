@@ -5,6 +5,8 @@ export function useTypingSession(text: MaybeRefOrGetter<string>) {
   const typed = ref("");
   const startedAt = ref<number | null>(null);
   const nowMs = ref(Date.now());
+  const totalKeypresses = ref(0);
+  const incorrectKeypresses = ref(0);
   let timer: ReturnType<typeof setInterval> | null = null;
 
   const normalizedText = computed(() => toValue(text));
@@ -33,10 +35,10 @@ export function useTypingSession(text: MaybeRefOrGetter<string>) {
   });
 
   const accuracy = computed(() => {
-    if (!typed.value.length) {
+    if (!totalKeypresses.value) {
       return 100;
     }
-    return Number(((correctChars.value / typed.value.length) * 100).toFixed(1));
+    return Number((((totalKeypresses.value - incorrectKeypresses.value) / totalKeypresses.value) * 100).toFixed(1));
   });
 
   const elapsedMs = computed(() => getElapsedMs(nowMs.value));
@@ -62,6 +64,13 @@ export function useTypingSession(text: MaybeRefOrGetter<string>) {
     }
 
     if (key.length === 1) {
+      const expectedChar = normalizedText.value[typed.value.length];
+
+      totalKeypresses.value += 1;
+      if (key !== expectedChar) {
+        incorrectKeypresses.value += 1;
+      }
+
       typed.value += key;
     }
   }
@@ -70,6 +79,8 @@ export function useTypingSession(text: MaybeRefOrGetter<string>) {
     typed.value = "";
     startedAt.value = null;
     nowMs.value = Date.now();
+    totalKeypresses.value = 0;
+    incorrectKeypresses.value = 0;
     stopTimer();
   }
 
@@ -79,8 +90,8 @@ export function useTypingSession(text: MaybeRefOrGetter<string>) {
     return {
       elapsedMs: elapsed,
       correctChars: correctChars.value,
-      accuracy: typed.value.length
-        ? Number(((correctChars.value / typed.value.length) * 100).toFixed(1))
+      accuracy: totalKeypresses.value
+        ? Number((((totalKeypresses.value - incorrectKeypresses.value) / totalKeypresses.value) * 100).toFixed(1))
         : 100,
       wpm: calculateWpm(correctChars.value, elapsed),
     };
