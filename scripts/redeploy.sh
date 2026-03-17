@@ -7,8 +7,11 @@ BRANCH="${BRANCH:-$(git -C "$ROOT_DIR" branch --show-current)}"
 REMOTE="${REMOTE:-origin}"
 SERVICE_NAME="${SERVICE_NAME:-bibletype.service}"
 APP_PORT="${APP_PORT:-4010}"
-HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://127.0.0.1:${APP_PORT}}"
+HEALTHCHECK_URL="${HEALTHCHECK_URL:-https://bibletype.raywang.dev}"
 RUN_UNIT_TESTS="${RUN_UNIT_TESTS:-0}"
+RUN_SMOKE_TEST="${RUN_SMOKE_TEST:-1}"
+SMOKE_TEST_RETRIES="${SMOKE_TEST_RETRIES:-20}"
+SMOKE_TEST_DELAY_SECONDS="${SMOKE_TEST_DELAY_SECONDS:-2}"
 
 log() {
   printf '\n[%s] %s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$*"
@@ -32,6 +35,24 @@ use_node_22() {
 
 run_pnpm() {
   corepack pnpm "$@"
+}
+
+wait_for_smoke_test() {
+  local attempt=1
+
+  while (( attempt <= SMOKE_TEST_RETRIES )); do
+    if curl --fail --silent --show-error --location --max-time 20 "$HEALTHCHECK_URL" >/dev/null; then
+      return 0
+    fi
+
+    if (( attempt == SMOKE_TEST_RETRIES )); then
+      return 1
+    fi
+
+    log "Smoke test not ready yet (attempt ${attempt}/${SMOKE_TEST_RETRIES}), retrying in ${SMOKE_TEST_DELAY_SECONDS}s"
+    sleep "$SMOKE_TEST_DELAY_SECONDS"
+    attempt=$((attempt + 1))
+  done
 }
 
 require_cmd git
@@ -67,7 +88,11 @@ log "Restarting ${SERVICE_NAME}"
 systemctl restart "$SERVICE_NAME"
 systemctl --no-pager --lines=20 status "$SERVICE_NAME"
 
-log "Running smoke test against ${HEALTHCHECK_URL}"
-curl --fail --silent --show-error --location --max-time 20 "$HEALTHCHECK_URL" >/dev/null
+if [[ "$RUN_SMOKE_TEST" == "1" ]]; then
+  log "Running smoke test against ${HEALTHCHECK_URL}"
+  wait_for_smoke_test
+else
+  log "Skipping smoke test"
+fi
 
 log "Redeploy finished successfully"
